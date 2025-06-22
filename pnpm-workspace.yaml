@@ -1,0 +1,5 @@
+ignoredBuiltDependencies:
+  - dprint
+
+onlyBuiltDependencies:
+  - esbuild
