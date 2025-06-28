@@ -9,7 +9,7 @@
 		"strict": true,
 		"moduleResolution": "nodenext",
 		"module": "NodeNext",
-		"outDir": "./out/",
+		"outDir": "./dist/",
 		"skipLibCheck": true,
 		"target": "ESNext",
 		"allowSyntheticDefaultImports": true

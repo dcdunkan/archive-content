@@ -8,7 +8,7 @@
 	"json": {},
 	"markdown": {},
 	"yaml": {},
-	"excludes": ["**/node_modules", "**/*-lock.json"],
+	"excludes": ["**/node_modules", "**/*-lock.json", "**/*-lock.yaml", "build", "dist"],
 	"plugins": [
 		"https://plugins.dprint.dev/typescript-0.95.7.wasm",
 		"https://plugins.dprint.dev/json-0.20.0.wasm",
