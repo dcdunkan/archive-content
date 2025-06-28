@@ -222,7 +222,7 @@ for (const entry of await fs.readdir(coursesDir, { withFileTypes: true })) {
 	courses.push(course);
 }
 
-const buildCoursesDir = join(BUILD_DIR, "courses");
+const buildCoursesDir = join(BUILD_DIR, "course");
 await fs.mkdir(buildCoursesDir, { recursive: true });
 
 for (const { path, modules, ...course } of courses) {

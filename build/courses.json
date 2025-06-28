@@ -1,17 +1,1 @@
-[
-	{
-		"code": "23CSP402",
-		"name": "Computer Networks",
-		"modules": [
-			{
-				"number": 1,
-				"name": "Introduction to Data Communication and Internet",
-				"slug": "introduction-to-data-communication-and-internet"
-			},
-			{ "number": 2, "name": "Application Layer", "slug": "application-layer" },
-			{ "number": 3, "name": "Transport Layer", "slug": "transport-layer" },
-			{ "number": 4, "name": "Network Layer", "slug": "network-layer" },
-			{ "number": 5, "name": "Data link layer", "slug": "data-link-layer" }
-		]
-	}
-]
+[{"code":"23CSP402","name":"Computer Networks","modules":[{"number":1,"name":"Introduction to Data Communication and Internet","slug":"introduction-to-data-communication-and-internet"},{"number":2,"name":"Application Layer","slug":"application-layer"},{"number":3,"name":"Transport Layer","slug":"transport-layer"},{"number":4,"name":"Network Layer","slug":"network-layer"},{"number":5,"name":"Data link layer","slug":"data-link-layer"}]}]
