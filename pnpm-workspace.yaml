@@ -2,4 +2,5 @@ ignoredBuiltDependencies:
   - dprint
 
 onlyBuiltDependencies:
+  - electron
   - esbuild

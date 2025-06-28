@@ -23,7 +23,7 @@ export const MODULE_SCHEMA = z.object({
 	parts: z.array(z.string()).default([]),
 });
 
-type CourseData = z.infer<typeof COURSE_SCHEMA>;
+export type CourseData = z.infer<typeof COURSE_SCHEMA>;
 export type ModuleData = z.infer<typeof MODULE_SCHEMA>;
 
 export type TOCItem = {
@@ -40,6 +40,7 @@ export type Module = ModuleData & {
 	slug: string;
 	number: number;
 	hierarchy: Hierarchy;
+	images: Set<string>;
 };
 
 export type Course = CourseData & {

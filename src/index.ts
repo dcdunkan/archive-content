@@ -1,179 +1,172 @@
-import slugify from "@sindresorhus/slugify";
-import { parse as parseYaml } from "@std/yaml";
+import { slugifyWithCounter } from "@sindresorhus/slugify";
+import { parse } from "@std/yaml";
 import GithubSlugger from "github-slugger";
 import MarkdownIt from "markdown-it";
 import markdownItAnchorPlugin from "markdown-it-anchor";
-import { default as Token } from "markdown-it/lib/token.mjs";
-import fs from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import Token from "markdown-it/lib/token.mjs";
+import { existsSync } from "node:fs";
+import * as fs from "node:fs/promises";
+import { basename, join, posix } from "node:path";
 import { z } from "zod/v4";
 import { markdownItFancyListPlugin } from "./markdown-it-plugins/fancy-lists/index.js";
 import { markdownItKatexPlugin } from "./markdown-it-plugins/katex/index.js";
 import {
-	type Course,
+	Course,
 	COURSE_SCHEMA,
-	type Hierarchy,
-	type Module,
+	CourseData,
+	Hierarchy,
+	Module,
 	MODULE_SCHEMA,
-	type TOCItem,
+	TOCItem,
 } from "./schema.js";
 
 const DATA_DIR = "./data";
 const MAX_TOC_DEPTH = 3;
-const STATIC_DIR = "./static";
+const BUILD_DIR = "./build";
 
-async function resolveCourseDirectory(entry: fs.Dirent<string>): Promise<Course> {
-	const coursePath = join(entry.parentPath, entry.name);
+const moduleNameSlugify = slugifyWithCounter();
 
-	const metadata = await fs.promises
-		.readFile(join(coursePath, "course.yaml"), "utf8")
-		.then((content) => z.parse(COURSE_SCHEMA, parseYaml(content)));
-
-	const moduleDirs = await fs.promises
-		.readdir(coursePath, { withFileTypes: true })
-		.then((files) => files.filter((file) => file.isDirectory()).map((file) => file.name));
+async function resolveCourseDirectory(root: string) {
+	const courseMetadata = await fs.readFile(join(root, "course.yaml"), "utf8")
+		.then((content) => z.parse(COURSE_SCHEMA, parse(content)));
 
 	const modules: Module[] = [];
-	const slugger = new GithubSlugger();
-	const mdit = new MarkdownIt({
-		html: true,
-		linkify: true,
-		typographer: true,
-	})
-		.use(markdownItAnchorPlugin, {
-			slugify: (str) => slugger.slug(str, false),
-			permalink: markdownItAnchorPlugin.permalink
-				.headerLink({ symbol: "#" }),
-		})
-		.use(markdownItKatexPlugin)
-		.use(markdownItFancyListPlugin, {});
+	for (const entry of await fs.readdir(root, { withFileTypes: true })) {
+		if (!entry.isDirectory()) continue;
 
-	const usedImages = new Set<string>();
-	const allImages = new Set<string>();
-
-	for (const moduleDir of moduleDirs) {
-		const modulePath = join(coursePath, moduleDir);
-
-		mdit.renderer.rules.image = function(tokens, idx) {
-			const token = tokens[idx];
-			const src = moduleDir + "/" + token.attrGet("src");
-			const alt = token.content;
-			const title = token.attrGet("title");
-
-			// todo: make this shit better
-			return [
-				`<figure>`,
-				[
-					`<img`,
-					`src="${src}"`,
-					`alt="${alt}"`,
-					`loading="lazy"`,
-					`decoding="async"`,
-					title ? `data-caption="${mdit.utils.escapeHtml(title)}"` : "",
-					`/>`,
-				].join(" "),
-				...(title ? [`<figcaption>${title}</figcaption>`] : []),
-				`</figure>`,
-			].join("");
-		};
-
-		const metadata = await fs.promises
-			.readFile(join(modulePath, "module.yaml"), "utf8")
-			.then((content) => z.parse(MODULE_SCHEMA, parseYaml(content)));
-
-		const hierarchy: Hierarchy = [];
-
-		for (const filename of metadata.parts) {
-			slugger.reset(); // reset each time
-
-			const fileContent = await fs.promises
-				.readFile(join(modulePath, filename), "utf8");
-
-			const tokens = mdit.parse(fileContent.trim(), {});
-			const fileToc = getMarkdownToc(tokens);
-			if (fileToc.length !== 1 || fileToc[0].level !== 1) {
-				throw new Error("Module part should have the the part name as H1 and only one H1");
-			}
-
-			// manage content and toc
-			hierarchy.push({
-				...fileToc[0],
-				content: mdit.renderer.render(tokens, mdit.options, {}), // to prevent the slug re-occurrence
-			});
-
-			// manage images
-			const images = tokens.filter(token => token.type === "inline")
-				.flatMap(token => token.children || [])
-				.filter(child => child.type === "image")
-				.map((image) => image.attrGet("src"))
-				.filter((src) => src != null)
-				.filter((src) => src.length > 0 && !URL.canParse(src))
-				.map((src) => resolve(modulePath, src));
-
-			for (const image of images) {
-				usedImages.add(image);
-			}
-		}
-
-		try {
-			// add all images to find unused images later
-			const moduleImagesDir = await fs.promises
-				.readdir(join(modulePath, "images"), { withFileTypes: true });
-			for (const image of moduleImagesDir) {
-				allImages.add(join(image.parentPath, image.name));
-			}
-		} catch (error) {
-			if (
-				error instanceof Error && "code" in error
-				&& (error as NodeJS.ErrnoException).code === "ENOENT"
-			) {
-				// ignore missing images folder
-			} else {
-				throw error;
-			}
-		}
-
-		modules.push({
-			number: metadata.number,
-			name: metadata.name,
-			syllabus: metadata.syllabus,
-			parts: metadata.parts,
-			hierarchy: hierarchy,
-			path: modulePath,
-			slug: slugify(metadata.name.trim(), {
-				lowercase: true,
-				separator: "-",
-			}),
-		});
+		moduleNameSlugify.reset();
+		const module = await resolveModuleDirectory(join(root, entry.name));
+		modules.push(module);
 	}
 
-	// copy source images to static directory
-	await fs.promises.rm(join(STATIC_DIR, "courses"), { recursive: true, force: true });
-	for (const filepath of usedImages) {
-		const relativePath = relative(resolve(DATA_DIR), filepath);
-		const sourceDir = dirname(relativePath);
-		const destinationDir = join(STATIC_DIR, sourceDir);
-		await fs.promises.mkdir(destinationDir, { recursive: true });
-		await fs.promises.copyFile(filepath, join(destinationDir, basename(relativePath)));
+	return {
+		code: courseMetadata.code,
+		name: courseMetadata.name,
+		preamble: courseMetadata.preamble,
+		textbooks: courseMetadata.textbooks,
+		referenceBooks: courseMetadata.referenceBooks,
+		nptelCourse: courseMetadata.nptelCourse,
+		modules: modules,
+		path: root,
+	};
+}
+
+const headingSlugger = new GithubSlugger();
+const mdit = new MarkdownIt({
+	html: true,
+	linkify: true,
+	typographer: true,
+})
+	.use(markdownItAnchorPlugin, {
+		slugify: (str) => headingSlugger.slug(str, false),
+		permalink: markdownItAnchorPlugin.permalink
+			.headerLink({ symbol: "#" }),
+	})
+	.use(markdownItKatexPlugin)
+	.use(markdownItFancyListPlugin, {});
+
+async function resolveModuleDirectory(root: string): Promise<Module> {
+	const moduleMetadata = await fs.readFile(join(root, "module.yaml"), "utf8")
+		.then((content) => z.parse(MODULE_SCHEMA, parse(content)));
+
+	mdit.renderer.rules.image = function(tokens, idx) {
+		const token = tokens[idx];
+		let src = token.attrGet("src");
+		if (src == null) {
+			throw new Error("invalid image src");
+		}
+
+		// todo: find missing images
+		const alt = token.content;
+		const title = token.attrGet("title");
+
+		return [
+			`<figure>`,
+			[
+				`<img`,
+				`src="${src}"`,
+				`alt="${alt}"`,
+				`loading="lazy"`,
+				`decoding="async"`,
+				title ? `data-caption="${mdit.utils.escapeHtml(title)}"` : "",
+				`/>`,
+			].join(" "),
+			...(title ? [`<figcaption>${title}</figcaption>`] : []),
+			`</figure>`,
+		].join("");
+	};
+
+	const USED_IMAGES = new Set<string>();
+	const ALL_IMAGES = new Set<string>();
+	const hierarchy: Hierarchy = [];
+
+	for (const filename of moduleMetadata.parts) {
+		headingSlugger.reset(); // reset each time
+
+		const fileContent = await fs.readFile(join(root, filename), "utf8");
+
+		const tokens = mdit.parse(fileContent.trim(), {});
+		const fileToc = getMarkdownToc(tokens);
+		if (fileToc.length !== 1 || fileToc[0].level !== 1) {
+			throw new Error("Module part should have the the part name as H1 and only one H1");
+		}
+
+		mdit.renderer.render(tokens, mdit.options, {});
+
+		// manage content and toc
+		hierarchy.push({
+			...fileToc[0],
+			content: fileContent,
+			// content: mdit.renderer.render(tokens, mdit.options, {}), // to prevent the slug re-occurrence
+		});
+
+		// manage images
+		const images = tokens.filter((token) => token.type === "inline")
+			.flatMap((token) => token.children || [])
+			.filter((child) => child.type === "image")
+			.map((image) => image.attrGet("src"))
+			.filter((src) => src != null)
+			.filter((src) => src.length > 0 && !URL.canParse(src))
+			.map((src) => join(root, src));
+
+		for (const image of images) {
+			USED_IMAGES.add(image);
+		}
+	}
+
+	const imagesDir = join(root, "images");
+	if (existsSync(imagesDir)) {
+		for await (const entry of await fs.readdir(imagesDir, { withFileTypes: true })) {
+			if (!entry.isFile()) continue;
+			ALL_IMAGES.add(join(imagesDir, entry.name));
+		}
 	}
 
 	// list unused images
-	const unusedImages = allImages.difference(usedImages);
+	const unusedImages = ALL_IMAGES.difference(USED_IMAGES);
 	if (unusedImages.size > 0) {
 		console.log(unusedImages.size, "unused images found:");
 		console.log("\t" + Array.from(unusedImages).join("\n\t"));
 	}
 
-	return {
-		code: metadata.code,
-		name: metadata.name,
-		preamble: metadata.preamble,
-		textbooks: metadata.textbooks,
-		referenceBooks: metadata.referenceBooks,
-		nptelCourse: metadata.nptelCourse,
+	const missingImages = USED_IMAGES.difference(ALL_IMAGES);
+	if (missingImages.size > 0) {
+		console.log(missingImages.size, "Missing images found:");
+		console.log("\t" + Array.from(missingImages).join("\n\t"));
+	}
 
-		path: coursePath,
-		modules: modules,
+	return {
+		number: moduleMetadata.number,
+		name: moduleMetadata.name,
+		syllabus: moduleMetadata.syllabus,
+		parts: moduleMetadata.parts,
+		hierarchy: hierarchy,
+		path: root,
+		slug: moduleNameSlugify(moduleMetadata.name.trim(), {
+			lowercase: true,
+			separator: "-",
+		}),
+		images: USED_IMAGES,
 	};
 }
 
@@ -191,7 +184,7 @@ function getMarkdownToc(tokens: Token[]) {
 					anchorToken.children == null
 					|| anchorToken.children[0]?.type !== "link_open"
 				) {
-					throw new Error("Invalid");
+					throw new Error("Invalid heading & link");
 				}
 				const inlineToken = tokens[i + 1].children![1];
 				const title = inlineToken.type === "text" ? inlineToken.content : "";
@@ -216,20 +209,79 @@ function getMarkdownToc(tokens: Token[]) {
 	return root;
 }
 
-export async function getCourses() {
-	const courseDirs = await fs.promises
-		.readdir(resolve(DATA_DIR, "courses"), { withFileTypes: true });
+// == BUILD ==
+await fs.rm(BUILD_DIR, { recursive: true, force: true });
 
-	const courses = new Map<string, Course>();
+const courses: Course[] = [];
 
-	for (const courseDir of courseDirs) {
-		if (!courseDir.isDirectory()) continue;
-
-		const course = await resolveCourseDirectory(courseDir);
-		courses.set(course.code.toLowerCase(), course);
-	}
-
-	return courses;
+const coursesDir = join(DATA_DIR, "courses");
+for (const entry of await fs.readdir(coursesDir, { withFileTypes: true })) {
+	if (!entry.isDirectory()) continue;
+	const coursePath = join(coursesDir, entry.name);
+	const course = await resolveCourseDirectory(coursePath);
+	courses.push(course);
 }
 
-await getCourses();
+const buildCoursesDir = join(BUILD_DIR, "courses");
+await fs.mkdir(buildCoursesDir, { recursive: true });
+
+for (const { path, modules, ...course } of courses) {
+	await fs.writeFile(
+		join(buildCoursesDir, course.code + ".json"),
+		JSON.stringify({
+			...course satisfies CourseData,
+			modules: modules.map(({ number, name, slug, syllabus }) => ({
+				number,
+				name,
+				slug,
+				syllabus,
+			})),
+		}),
+		"utf8",
+	);
+
+	const buildCourseDir = join(buildCoursesDir, course.code);
+	await fs.mkdir(buildCourseDir, { recursive: true });
+
+	const buildModulesDir = join(buildCourseDir, "module");
+	await fs.mkdir(buildModulesDir, { recursive: true });
+
+	for (const { path, hierarchy, parts, images, ...module } of modules) {
+		const buildModuleImagesDir = join(buildModulesDir, module.number.toString(), "images");
+		await fs.mkdir(buildModuleImagesDir, { recursive: true });
+
+		for (const src of images) {
+			const filename = basename(src);
+			const filepath = join(path, "images", filename);
+			await fs.copyFile(filepath, join(buildModuleImagesDir, filename));
+		}
+
+		await fs.writeFile(
+			join(buildModulesDir, module.number + ".json"),
+			JSON.stringify({
+				...module,
+				hierarchy: hierarchy.map(({ content, ...part }) => part),
+				parts: hierarchy.map(({ content }) => content),
+			}),
+			"utf8",
+		);
+	}
+}
+
+await fs.writeFile(
+	join(BUILD_DIR, "courses.json"),
+	JSON.stringify(courses.map((course) => {
+		return {
+			code: course.code,
+			name: course.name,
+			modules: course.modules.map((module) => {
+				return {
+					number: module.number,
+					name: module.name,
+					slug: module.slug,
+				};
+			}),
+		};
+	})),
+	"utf8",
+);
