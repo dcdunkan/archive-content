@@ -8,6 +8,7 @@ All requests are GET requests.
 
 | Path                                                    | Description                     |
 | ------------------------------------------------------- | ------------------------------- |
+| `/search-index.json`                                    | Global search index             |
 | `/courses.json`                                         | List of courses                 |
 | `/course/{course_code}.json`                            | Course information              |
 | `/course/{course_code}/module/{module_num}.json`        | Module information and content  |
