@@ -8,16 +8,20 @@
 		"start": "tsx src/index.ts",
 		"build": "tsx src/index.ts",
 		"dev": "tsx watch src/index.ts",
-		"fmt": "dprint fmt"
+		"fmt": "dprint fmt",
+		"serve": "tsx watch src/serve.ts"
 	},
 	"keywords": [],
 	"author": "dcdunkan",
 	"license": "MIT",
-	"packageManager": "pnpm@10.12.1",
+	"packageManager": "pnpm@10.12.4",
 	"devDependencies": {
+		"@hono/node-server": "^1.15.0",
 		"@types/node": "^24.0.3",
 		"@types/roman-numerals": "^0.3.2",
 		"dprint": "^0.50.0",
+		"hono": "^4.8.3",
+		"mime": "^4.0.7",
 		"tsx": "^4.20.3",
 		"typescript": "^5.8.3"
 	},

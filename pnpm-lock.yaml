@@ -39,6 +39,9 @@ importers:
         specifier: ^3.25.67
         version: 3.25.67
     devDependencies:
+      '@hono/node-server':
+        specifier: ^1.15.0
+        version: 1.15.0(hono@4.8.3)
       '@types/node':
         specifier: ^24.0.3
         version: 24.0.3
@@ -48,6 +51,12 @@ importers:
       dprint:
         specifier: ^0.50.0
         version: 0.50.0
+      hono:
+        specifier: ^4.8.3
+        version: 4.8.3
+      mime:
+        specifier: ^4.0.7
+        version: 4.0.7
       tsx:
         specifier: ^4.20.3
         version: 4.20.3
@@ -252,6 +261,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@hono/node-server@1.15.0':
+    resolution: {integrity: sha512-MjmK4l5N4dQpZ9OSWN0tCj7ejuc7WvuWMzSKtc89bnknJykAeHxzRigXBTYZk85H6Awrii6RM59iUiUluApu2A==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
+
   '@jsr/std__yaml@1.0.8':
     resolution: {integrity: sha512-iLe84pvIEtG7EFKxP5fIQn7CFQle7gzkb6KSPqf9zkyR2NVViSJjK8xbXg82SUEFSmpdY18qCGpVEnTG3oRMVg==, tarball: https://npm.jsr.io/~/11/@jsr/std__yaml/1.0.8.tgz}
 
@@ -313,6 +328,10 @@ packages:
   github-slugger@2.0.0:
     resolution: {integrity: sha512-IaOQ9puYtjrkq7Y0Ygl9KDZnrf/aiUJYUpVf89y8kyaxbRG7Y1SrX/jaumrv81vc61+kiMempujsM3Yw7w5qcw==}
 
+  hono@4.8.3:
+    resolution: {integrity: sha512-jYZ6ZtfWjzBdh8H/0CIFfCBHaFL75k+KMzaM177hrWWm2TWL39YMYaJgB74uK/niRc866NMlH9B8uCvIo284WQ==}
+    engines: {node: '>=16.9.0'}
+
   katex@0.16.22:
     resolution: {integrity: sha512-XCHRdUw4lf3SKBaJe4EvgqIuWwkPSo9XoeO8GjQW94Bp7TWv9hNhzZjZ+OH9yf1UmLygb7DIT5GSFQiyt16zYg==}
     hasBin: true
@@ -337,6 +356,11 @@ packages:
 
   mdurl@2.0.0:
     resolution: {integrity: sha512-Lf+9+2r+Tdp5wXDXC4PcIBjTDtq4UKjCPMQhKIuzpJNW0b96kVqSwW0bT7FhRSfmAiFYgP+SCRvdrDozfh0U5w==}
+
+  mime@4.0.7:
+    resolution: {integrity: sha512-2OfDPL+e03E0LrXaGYOtTFIYhiuzep94NSsuhrNULq+stylcJedcHdzHtz0atMUuGwJfFYs0YL5xeC/Ca2x0eQ==}
+    engines: {node: '>=16'}
+    hasBin: true
 
   punycode.js@2.3.1:
     resolution: {integrity: sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA==}
@@ -471,6 +495,10 @@ snapshots:
   '@esbuild/win32-x64@0.25.5':
     optional: true
 
+  '@hono/node-server@1.15.0(hono@4.8.3)':
+    dependencies:
+      hono: 4.8.3
+
   '@jsr/std__yaml@1.0.8': {}
 
   '@sindresorhus/slugify@2.2.1':
@@ -554,6 +582,8 @@ snapshots:
 
   github-slugger@2.0.0: {}
 
+  hono@4.8.3: {}
+
   katex@0.16.22:
     dependencies:
       commander: 8.3.0
@@ -582,6 +612,8 @@ snapshots:
       uc.micro: 2.1.0
 
   mdurl@2.0.0: {}
+
+  mime@4.0.7: {}
 
   punycode.js@2.3.1: {}
 
