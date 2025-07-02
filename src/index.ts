@@ -65,40 +65,18 @@ const mdit = new MarkdownIt({
 	.use(markdownItKatexPlugin)
 	.use(markdownItFancyListPlugin, {});
 
-async function resolveModuleDirectory(root: string): Promise<Module> {
+async function resolveModuleDirectory(
+	root: string,
+): Promise<Module> {
 	const moduleMetadata = await fs.readFile(join(root, "module.yaml"), "utf8")
 		.then((content) => z.parse(MODULE_SCHEMA, parse(content)));
 
-	mdit.renderer.rules.image = function(tokens, idx) {
-		const token = tokens[idx];
-		let src = token.attrGet("src");
-		if (src == null) {
-			throw new Error("invalid image src");
-		}
-
-		// todo: find missing images
-		const alt = token.content;
-		const title = token.attrGet("title");
-
-		return [
-			`<figure>`,
-			[
-				`<img`,
-				`src="${src}"`,
-				`alt="${alt}"`,
-				`loading="lazy"`,
-				`decoding="async"`,
-				title ? `data-caption="${mdit.utils.escapeHtml(title)}"` : "",
-				`/>`,
-			].join(" "),
-			...(title ? [`<figcaption>${title}</figcaption>`] : []),
-			`</figure>`,
-		].join("");
-	};
-
 	const USED_IMAGES = new Set<string>();
 	const ALL_IMAGES = new Set<string>();
+
+	// todo: make a single full hierarchy and restrict the depth as needed instead of generating twice.
 	const hierarchy: Hierarchy = [];
+	const fullHierarchy: TOCItem[] = [];
 
 	for (const filename of moduleMetadata.parts) {
 		headingSlugger.reset(); // reset each time
@@ -106,12 +84,12 @@ async function resolveModuleDirectory(root: string): Promise<Module> {
 		const fileContent = await fs.readFile(join(root, filename), "utf8");
 
 		const tokens = mdit.parse(fileContent.trim(), {});
-		const fileToc = getMarkdownToc(tokens);
+		const fileToc = getMarkdownToc(tokens, MAX_TOC_DEPTH);
 		if (fileToc.length !== 1 || fileToc[0].level !== 1) {
 			throw new Error("Module part should have the the part name as H1 and only one H1");
 		}
 
-		mdit.renderer.render(tokens, mdit.options, {});
+		// mdit.renderer.render(tokens, mdit.options, {});
 
 		// manage content and toc
 		hierarchy.push({
@@ -119,6 +97,9 @@ async function resolveModuleDirectory(root: string): Promise<Module> {
 			content: fileContent,
 			// content: mdit.renderer.render(tokens, mdit.options, {}), // to prevent the slug re-occurrence
 		});
+
+		const fullHierarchyToc = getMarkdownToc(tokens, 6);
+		fullHierarchy.push(fullHierarchyToc[0]);
 
 		// manage images
 		const images = tokens.filter((token) => token.type === "inline")
@@ -145,7 +126,7 @@ async function resolveModuleDirectory(root: string): Promise<Module> {
 	// list unused images
 	const unusedImages = ALL_IMAGES.difference(USED_IMAGES);
 	if (unusedImages.size > 0) {
-		console.log(unusedImages.size, "unused images found:");
+		console.log(unusedImages.size, "Unused images found:");
 		console.log("\t" + Array.from(unusedImages).join("\n\t"));
 	}
 
@@ -161,6 +142,7 @@ async function resolveModuleDirectory(root: string): Promise<Module> {
 		syllabus: moduleMetadata.syllabus,
 		parts: moduleMetadata.parts,
 		hierarchy: hierarchy,
+		fullHierarchy: fullHierarchy,
 		path: root,
 		slug: moduleNameSlugify(moduleMetadata.name.trim(), {
 			lowercase: true,
@@ -170,7 +152,7 @@ async function resolveModuleDirectory(root: string): Promise<Module> {
 	};
 }
 
-function getMarkdownToc(tokens: Token[]) {
+function getMarkdownToc(tokens: Token[], maxDepth: number) {
 	const root: TOCItem[] = [];
 	const stack: TOCItem[][] = [root];
 
@@ -178,7 +160,7 @@ function getMarkdownToc(tokens: Token[]) {
 		const token = tokens[i];
 		if (token.type === "heading_open") {
 			const level = Number(token.tag[1]);
-			if (level <= MAX_TOC_DEPTH) {
+			if (level <= maxDepth) {
 				const anchorToken = tokens[i + 1];
 				if (
 					anchorToken.children == null
@@ -209,6 +191,9 @@ function getMarkdownToc(tokens: Token[]) {
 	return root;
 }
 
+// todo: more logging during build
+// todo: could potentially introduce serving parts separately
+
 // == BUILD ==
 await fs.rm(BUILD_DIR, { recursive: true, force: true });
 
@@ -229,7 +214,13 @@ for (const { path, modules, ...course } of courses) {
 	await fs.writeFile(
 		join(buildCoursesDir, course.code + ".json"),
 		JSON.stringify({
-			...course satisfies CourseData,
+			// todo: could introduce some actual type and use the spread operators instead of explicit specifying.
+			// or... is it really necessary? being explicit hides the ambiguity tho. sticking with it for now.
+			code: course.code,
+			name: course.name,
+			preamble: course.preamble,
+			referenceBooks: course.referenceBooks,
+			textbooks: course.textbooks,
 			modules: modules.map(({ number, name, slug, syllabus }) => ({
 				number,
 				name,
@@ -259,7 +250,12 @@ for (const { path, modules, ...course } of courses) {
 		await fs.writeFile(
 			join(buildModulesDir, module.number + ".json"),
 			JSON.stringify({
-				...module,
+				// todo: could introduce some actual type and use the spread operators instead of explicit specifying.
+				// or... is it really necessary? being explicit hides the ambiguity tho. sticking with it for now.
+				number: module.number,
+				name: module.name,
+				syllabus: module.syllabus,
+				slug: module.slug,
 				hierarchy: hierarchy.map(({ content, ...part }) => part),
 				parts: hierarchy.map(({ content }) => content),
 			}),
@@ -285,3 +281,129 @@ await fs.writeFile(
 	})),
 	"utf8",
 );
+
+// == BUILD search index
+
+type CourseSearchDocument = {
+	type: "course";
+	name: string;
+	code: string;
+	modules: number;
+};
+type ModuleSearchDocument = {
+	type: "module";
+	name: string;
+	number: number;
+	slug: string;
+	courseCode: string;
+	courseName: string;
+};
+// todo: full text search through the content (use smthing like remove-markdown?)
+type ChapterSearchDocument = {
+	type: "chapter";
+	title: string;
+	chapterId: string;
+	chapterNumber: number;
+};
+type SectionSearchDocument = {
+	type: "section";
+	title: string;
+	sectionId: string;
+	parent: string[];
+	level: number;
+};
+type TermSearchDocument = {
+	type: "term";
+}; // what about glossary??
+
+// todo:
+type FigureSearchDocument = {
+	type: "figure";
+	figure_type: "image" | "diagram";
+	src: string;
+	caption: string;
+	alt: string;
+};
+type QuestionSearchDocument = {
+	type: "question";
+};
+// could todo:
+// - video descriptions/transcripts
+// - bits & ai based search result
+
+// todo: make this shared
+type SearchDocument =
+	| CourseSearchDocument
+	| ModuleSearchDocument
+	| ChapterSearchDocument
+	| SectionSearchDocument
+	| TermSearchDocument
+	| FigureSearchDocument
+	| QuestionSearchDocument;
+
+const searchDocuments: SearchDocument[] = [];
+
+for (const course of courses) {
+	searchDocuments.push({
+		type: "course",
+		code: course.code,
+		name: course.name,
+		modules: course.modules.length,
+	});
+
+	for (const module of course.modules) {
+		searchDocuments.push({
+			type: "module",
+			name: module.name,
+			slug: module.slug,
+			number: module.number,
+			courseCode: course.code,
+			courseName: course.name,
+		});
+
+		for (const [chapterIndex, hierarchyItem] of module.fullHierarchy.entries()) {
+			searchDocuments.push({
+				type: "chapter",
+				title: hierarchyItem.title,
+				chapterId: hierarchyItem.id,
+				chapterNumber: chapterIndex + 1,
+			});
+			addHierarchyToSearchDocuments(hierarchyItem.children, [hierarchyItem.title]);
+		}
+	}
+}
+
+function addHierarchyToSearchDocuments(tocItems: TOCItem[], parent: string[]) {
+	for (const item of tocItems) {
+		searchDocuments.push({
+			type: "section",
+			title: item.title,
+			level: item.level,
+			sectionId: item.id,
+			parent: parent,
+		});
+
+		if (item.children.length > 0) {
+			addHierarchyToSearchDocuments(item.children, [...parent, item.title]);
+		}
+	}
+}
+
+await fs.writeFile(
+	join(BUILD_DIR, "search-index.json"),
+	JSON.stringify(searchDocuments),
+	"utf8",
+);
+
+console.log("Indexed", searchDocuments.length, "search entries");
+for (
+	const [type, groupCount] of Object.entries(searchDocuments.reduce((p, c) => {
+		if (p[c.type] == null) {
+			p[c.type] = 0;
+		}
+		p[c.type]++;
+		return p;
+	}, {} as Record<string, number>))
+) {
+	console.log(type, groupCount);
+}

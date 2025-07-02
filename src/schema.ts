@@ -41,6 +41,9 @@ export type Module = ModuleData & {
 	number: number;
 	hierarchy: Hierarchy;
 	images: Set<string>;
+	// todo: build only and this is shitty ass impl. gotta fix.
+	// generate full hierarchy. and restrict the depth when its used / referenced.
+	fullHierarchy: TOCItem[];
 };
 
 export type Course = CourseData & {
