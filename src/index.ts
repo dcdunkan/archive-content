@@ -304,6 +304,11 @@ type ChapterSearchDocument = {
 	title: string;
 	chapterId: string;
 	chapterNumber: number;
+	moduleName: string;
+	moduleNumber: number;
+	moduleSlug: string;
+	courseCode: string;
+	courseName: string;
 };
 type SectionSearchDocument = {
 	type: "section";
@@ -311,6 +316,11 @@ type SectionSearchDocument = {
 	sectionId: string;
 	parent: string[];
 	level: number;
+	moduleName: string;
+	moduleNumber: number;
+	moduleSlug: string;
+	courseCode: string;
+	courseName: string;
 };
 type TermSearchDocument = {
 	type: "term";
@@ -367,13 +377,35 @@ for (const course of courses) {
 				title: hierarchyItem.title,
 				chapterId: hierarchyItem.id,
 				chapterNumber: chapterIndex + 1,
+				courseCode: course.code,
+				courseName: course.name,
+				moduleName: module.name,
+				moduleNumber: module.number,
+				moduleSlug: module.slug,
 			});
-			addHierarchyToSearchDocuments(hierarchyItem.children, [hierarchyItem.title]);
+			addSectionsToSearchDocuments(
+				{
+					courseCode: course.code,
+					courseName: course.name,
+					moduleName: module.name,
+					moduleNumber: module.number,
+					moduleSlug: module.slug,
+				},
+				hierarchyItem.children,
+				[hierarchyItem.title],
+			);
 		}
 	}
 }
 
-function addHierarchyToSearchDocuments(tocItems: TOCItem[], parent: string[]) {
+function addSectionsToSearchDocuments(
+	common: Omit<
+		SectionSearchDocument,
+		"type" | "title" | "level" | "sectionId" | "parent"
+	>,
+	tocItems: TOCItem[],
+	parent: string[],
+) {
 	for (const item of tocItems) {
 		searchDocuments.push({
 			type: "section",
@@ -381,10 +413,11 @@ function addHierarchyToSearchDocuments(tocItems: TOCItem[], parent: string[]) {
 			level: item.level,
 			sectionId: item.id,
 			parent: parent,
+			...common,
 		});
 
 		if (item.children.length > 0) {
-			addHierarchyToSearchDocuments(item.children, [...parent, item.title]);
+			addSectionsToSearchDocuments(common, item.children, [...parent, item.title]);
 		}
 	}
 }
