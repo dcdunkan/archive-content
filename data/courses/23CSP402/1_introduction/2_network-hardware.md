@@ -103,8 +103,6 @@ Every device has a dedicated point-to-point link to every other device. The term
 
 To find the number of physical links in a fully connected mesh network with n nodes
 
-<!-- todo math -->
-
 $$
 n(n-1)/2
 $$

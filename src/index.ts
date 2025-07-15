@@ -6,19 +6,11 @@ import markdownItAnchorPlugin from "markdown-it-anchor";
 import Token from "markdown-it/lib/token.mjs";
 import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
-import { basename, join, posix } from "node:path";
+import { basename, join } from "node:path";
 import { z } from "zod/v4";
 import { markdownItFancyListPlugin } from "./markdown-it-plugins/fancy-lists/index.js";
 import { markdownItKatexPlugin } from "./markdown-it-plugins/katex/index.js";
-import {
-	Course,
-	COURSE_SCHEMA,
-	CourseData,
-	Hierarchy,
-	Module,
-	MODULE_SCHEMA,
-	TOCItem,
-} from "./schema.js";
+import { Course, COURSE_SCHEMA, Hierarchy, Module, MODULE_SCHEMA, TOCItem } from "./schema.js";
 
 const DATA_DIR = "./data";
 const MAX_TOC_DEPTH = 3;
@@ -89,6 +81,8 @@ async function resolveModuleDirectory(
 			throw new Error("Module part should have the the part name as H1 and only one H1");
 		}
 
+		console.log(tokens);
+
 		// mdit.renderer.render(tokens, mdit.options, {});
 
 		// manage content and toc
@@ -148,7 +142,7 @@ async function resolveModuleDirectory(
 			lowercase: true,
 			separator: "-",
 		}),
-		images: USED_IMAGES,
+		images: USED_IMAGES, // could be used to create empty divs of the same sizes to prevent layout shift
 	};
 }
 
