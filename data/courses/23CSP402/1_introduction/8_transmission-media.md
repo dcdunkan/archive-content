@@ -34,7 +34,7 @@ A transmission medium can be broadly defined as anything that can carry informat
 - Cable TV networks also use coaxial cables.
 - Another common application of coaxial cable is in traditional Ethernet LANs
 
-![](images/deb2325cc7019c27a418da43344796ab7fdbee5cc8ffc876c93af9d1e9982747.jpg)
+![Coaxial Cable](images/deb2325cc7019c27a418da43344796ab7fdbee5cc8ffc876c93af9d1e9982747.jpg "Coaxial Cable")
 
 ![Coaxial cable](images/abf046379c11d591432fff2b02115497e1e028396949ca3e6704a5643c205d26.jpg "Coaxial cable")
 

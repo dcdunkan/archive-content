@@ -16,5 +16,8 @@
 	},
 	"[markdown]": {
 		"editor.defaultFormatter": "dprint.dprint"
+	},
+	"[svg]": {
+		"editor.defaultFormatter": "jock.svg"
 	}
 }

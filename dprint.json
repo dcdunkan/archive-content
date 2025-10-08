@@ -6,7 +6,10 @@
 		"useBraces": "maintain"
 	},
 	"json": {},
-	"markdown": {},
+	"markdown": {
+		"lineWidth": 80,
+		"textWrap": "always"
+	},
 	"yaml": {},
 	"excludes": ["**/node_modules", "**/*-lock.json", "**/*-lock.yaml", "build", "dist"],
 	"plugins": [

@@ -5,9 +5,10 @@ import { createReadStream, promises as fsPromises } from "fs";
 import { Hono } from "hono";
 import mime from "mime";
 import { join } from "path";
+import { BUILD_DIR } from "./constants.js";
 
 const PORT = 8000;
-const SERVE_DIR = join("build");
+const SERVE_DIR = BUILD_DIR;
 
 const app = new Hono();
 
@@ -18,7 +19,10 @@ async function resolveCaseInsensitive(filePath: string): Promise<string | null> 
 	for (const part of parts) {
 		const entries = await fsPromises.readdir(currentDir);
 		const match = entries.find(name => name.toLowerCase() === part.toLowerCase());
-		if (!match) return null;
+		if (!match) {
+			console.log(currentDir);
+			return null;
+		}
 		currentDir = join(currentDir, match);
 	}
 
@@ -48,6 +52,6 @@ app.get("*", async (c) => {
 	}
 });
 
-serve({ fetch: app.fetch, port: PORT });
+serve({ fetch: app.fetch, port: PORT, hostname: "0.0.0.0" });
 
 console.log("File server running at", PORT);

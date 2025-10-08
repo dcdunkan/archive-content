@@ -3,14 +3,14 @@
 number: 1
 name: Introduction to Data Communication and Internet
 syllabus:
-    - "Introduction to Data Communication - Modes of communication, Physical topologies"
+    - "Modes of communication, Physical topologies"
     - "Signal encoding, Multiplexing"
     - "Transmission media overview"
     - "Performance indicators - Bandwidth, Throughput, Latency, Queuing time, Bandwidth-Delay product"
     - "Basics of Internet, The Network Edge, The Network Core"
     - "Protocol layers and their service models: The OSI reference model"
     - "The TCP/IP reference model"
-parts:
+chapters:
     - 1_network.md
     - 2_network-hardware.md
     - 3_network-software.md

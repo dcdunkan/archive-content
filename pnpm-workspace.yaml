@@ -1,4 +1,6 @@
 onlyBuiltDependencies:
-    - electron
-    - esbuild
-    - dprint
+  - dprint
+  - electron
+  - esbuild
+  - puppeteer
+  - sharp

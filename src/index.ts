@@ -14,7 +14,7 @@ import { Course, COURSE_SCHEMA, Hierarchy, Module, MODULE_SCHEMA, TOCItem } from
 
 const DATA_DIR = "./data";
 const MAX_TOC_DEPTH = 3;
-const BUILD_DIR = "./build";
+const BUILD_DIR = "./buildx";
 
 const moduleNameSlugify = slugifyWithCounter();
 
@@ -80,8 +80,6 @@ async function resolveModuleDirectory(
 		if (fileToc.length !== 1 || fileToc[0].level !== 1) {
 			throw new Error("Module part should have the the part name as H1 and only one H1");
 		}
-
-		console.log(tokens);
 
 		// mdit.renderer.render(tokens, mdit.options, {});
 
@@ -277,7 +275,6 @@ await fs.writeFile(
 );
 
 // == BUILD search index
-
 type CourseSearchDocument = {
 	type: "course";
 	name: string;
