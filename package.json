@@ -20,7 +20,6 @@
 		"@types/mdast": "^4.0.4",
 		"@types/node": "^24.0.3",
 		"dprint": "^0.50.0",
-		"mime": "^4.0.7",
 		"tsx": "^4.20.3",
 		"typescript": "^5.8.3"
 	},
@@ -36,7 +35,6 @@
 		"hast-util-from-html": "^2.0.3",
 		"hast-util-to-html": "^9.0.5",
 		"hast-util-to-string": "^3.0.1",
-		"hast-util-to-text": "^4.0.2",
 		"hastscript": "^9.0.1",
 		"katex": "^0.16.22",
 		"mdast-util-math": "^3.0.0",
