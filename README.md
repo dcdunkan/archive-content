@@ -3,9 +3,9 @@
 [![Netlify Status](https://api.netlify.com/api/v1/badges/b78cb1bb-f9c8-4786-bf8c-4e7af8941137/deploy-status)](https://app.netlify.com/projects/tap-content/deploys)
 
 The API is currently designed as a static JSON based API. The build script
-builds the JSON files that are statically served.
+builds the JSON files and assets that are statically served.
 
-All requests are GET requests.
+All requests are GET requests, as this is a static API.
 
 ### Constants
 
@@ -48,3 +48,15 @@ environment variable (in Netlify's context).
   [`dprint`](https://dprint.dev) for convenience.
 - Please format the files using `pnpm run fmt`.
 - You can run the `dev` script while in-development.
+
+#### Environment variables
+
+| Environment variable name | Description                                                                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `URL`                     | Root of the content API to be used as the prefix for image sources. This naming convention is used for convenient Netlify hosting (Netlify provides the project URL in the `URL` environment variable) |
+
+### License
+
+This project is licensed under MIT.
+
+See [LICENSE](./LICENSE)
