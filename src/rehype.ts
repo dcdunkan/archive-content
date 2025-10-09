@@ -63,20 +63,37 @@ function figure(options: {
 				? BACKEND_ROOT_URL + node.child.url
 				: node.child.url;
 
+			if (
+				node.child.data == null || !("width" in node.child.data)
+				|| !("height" in node.child.data)
+			) {
+				throw new Error("expected width and height of the image");
+			}
+
 			childNode = h("img", {
 				src: url,
 				alt: node.child.alt,
 				title: node.child.title,
+				width: node.child.data.width,
+				height: node.child.data.height,
 				loading: "lazy",
 				decoding: "async",
 				"data-caption": node.child.title,
 			});
 		} else if (node.child.type === "d2") {
 			if (node.child.diagram.type === "svg") {
-				childNode = {
+				childNode = h("div", {
+					title: node.caption,
+					style: stylize({
+						"width": node.child.diagram.width + "px",
+						"height": node.child.diagram.height + "px",
+						"max-width": node.child.diagram.width + "px",
+						"max-height": node.child.diagram.height + "px",
+					}),
+				}, [{
 					type: "raw",
 					value: node.child.diagram.raw,
-				};
+				}]);
 			} else if (node.child.diagram.type === "source") {
 				throw new Error(
 					"Source types must be transformed to compiled svg before rehype",
@@ -111,4 +128,11 @@ function math(): Handler {
 		}
 		return { type: "raw", value: node.renderedString };
 	};
+}
+
+function stylize(styles: Record<string, unknown>) {
+	return Object
+		.entries(styles)
+		.map(([k, v]) => `${k}: ${v}`)
+		.join(";");
 }
