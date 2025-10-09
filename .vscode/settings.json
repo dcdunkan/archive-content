@@ -19,5 +19,8 @@
 	},
 	"[svg]": {
 		"editor.defaultFormatter": "jock.svg"
+	},
+	"[github-actions-workflow]": {
+		"editor.defaultFormatter": "dprint.dprint"
 	}
 }
