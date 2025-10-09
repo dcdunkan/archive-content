@@ -32,8 +32,8 @@ jobs:
 
             - name: Install D2
               env:
-                  VERSION: "v0.7.1"
-              run: curl -fsSL https://d2lang.com/install.sh | sh -s -- --version "$VERSION" --method=standalone
+                  D2_VERSION: "v0.7.1"
+              run: curl -fsSL https://d2lang.com/install.sh | sh -s -- --version "$D2_VERSION" --method=standalone
 
             - name: Build files
               run: pnpm run build

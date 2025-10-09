@@ -8,7 +8,7 @@
 		"start": "node --env-file=.env out/build.js",
 		"compile": "tsc",
 		"dev": "tsx watch --env-file=.env --include ./data src/build.ts",
-		"build": "tsx --env-file=.env src/build.ts",
+		"build": "tsx src/build.ts",
 		"fmt": "dprint fmt"
 	},
 	"keywords": [],
