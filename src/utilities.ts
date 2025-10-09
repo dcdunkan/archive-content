@@ -1,5 +1,8 @@
 import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
+import { join } from "node:path";
+import { $, which } from "zx";
+import { D2_DIAGRAM_FONTS_ROOT_DIR, D2_FONT_FILENAMES } from "./constants.js";
 
 // todo: generalize this for all stored maps
 export async function openImageMapFile(src: string): Promise<Map<string, string>> {
@@ -82,4 +85,44 @@ export class UsageHistoryMap<K, V> extends Map<K, V> {
 			.difference(this.#usedKeys)
 			.keys();
 	}
+}
+
+// todo: tool for checking the formatting of d2 in markdown
+
+const D2_FLAGS = ([
+	["--pad", 0],
+	["--no-xml-tag"],
+	["--font-regular", join(D2_DIAGRAM_FONTS_ROOT_DIR, D2_FONT_FILENAMES.Regular)],
+	["--font-italic", join(D2_DIAGRAM_FONTS_ROOT_DIR, D2_FONT_FILENAMES.Italic)],
+	["--font-semibold", join(D2_DIAGRAM_FONTS_ROOT_DIR, D2_FONT_FILENAMES.Semibold)],
+	["--font-bold", join(D2_DIAGRAM_FONTS_ROOT_DIR, D2_FONT_FILENAMES.Bold)],
+] satisfies ([string] | [string, unknown])[]).flat().map((s) => String(s));
+
+const D2_PATH = process.env.D2_PATH || await which("d2", { nothrow: true });
+if (D2_PATH == null) {
+	throw new Error("D2 executable not found in PATH. Set D2_PATH if its elsewhere");
+}
+
+// The library version of D2 has some dangling promises and worker threads that are not closed
+// after the usage. This is likely a bug in the library. Hence, switch to CLI, which makes the
+// d2 cli a requirement for building the content.
+// todo: remove this later when library is working fine
+export async function renderD2toSVG(str: string) {
+	if (str.length === 0) {
+		throw new Error("Empty string was passed to d2 render job");
+	}
+
+	const result = await $`echo ${str}`
+		.pipe($`${D2_PATH} ${D2_FLAGS} -`)
+		.quiet();
+
+	if (!result.ok) {
+		console.error(result);
+		console.error(str);
+		throw new Error("Failed to render the d2 node");
+	}
+	if (result.stdout.length === 0) {
+		throw new Error("Expected an SVG output");
+	}
+	return result.stdout.trim();
 }

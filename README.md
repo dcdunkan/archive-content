@@ -44,6 +44,8 @@ environment variable (in Netlify's context).
 
 ### For Developers & Contributors
 
+- Prerequisites: [Node.js](https://nodejs.org),
+  [D2](https://d2lang.com/tour/install) for rendering D2 diagrams.
 - We use Node.js, [`pnpm`](https://pnpm.io), [`tsx`](https://tsx.is) and
   [`dprint`](https://dprint.dev) for convenience.
 - Please format the files using `pnpm run fmt`.

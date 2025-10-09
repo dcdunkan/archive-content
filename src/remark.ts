@@ -1,7 +1,12 @@
+import * as css from "@adobe/css-tools";
+import { AstRule, createParser, render as renderCSSSelector } from "css-selector-parser";
+import { toHtml } from "hast-util-to-html";
+import * as cssValueParser from "postcss-values-parser";
+import { optimize } from "svgo";
+
 import { sha256 } from "@oslojs/crypto/sha2";
 import { slugifyWithCounter } from "@sindresorhus/slugify";
 import { parse } from "@std/yaml";
-import { D2 } from "@terrastruct/d2";
 import { default as GithubSlugger } from "github-slugger";
 import { fromHtml } from "hast-util-from-html";
 import { default as katex } from "katex";
@@ -22,9 +27,8 @@ import { z } from "zod/v4";
 import {
 	D2_BACKGROUND_COLOR_THEME_KEY,
 	D2_CLASS_REGEXP,
+	D2_COLOR_PREFIXES,
 	D2_COMMON_CLASS_PROPERTIES,
-	D2_COMPILE_OPTIONS,
-	D2_RENDER_OPTIONS,
 	D2_THEME_VARIABLE_PREFIX,
 	DARK_THEME_COLORS,
 	IMAGE_EXT,
@@ -42,12 +46,7 @@ import {
 	MODULE_SCHEMA,
 	type ModuleChapter,
 } from "./types.js";
-
-import * as css from "@adobe/css-tools";
-import { AstRule, createParser, render as renderCSSSelector } from "css-selector-parser";
-import { toHtml } from "hast-util-to-html";
-import * as cssValueParser from "postcss-values-parser";
-import { optimize } from "svgo";
+import { renderD2toSVG } from "./utilities.js";
 
 // === image path to id mapping
 
@@ -327,7 +326,6 @@ function customFigurizerPlugin() {
 	};
 }
 
-const d2 = new D2();
 const parseCSSSelector = createParser({ syntax: "latest" });
 
 // function findElementsByTagName(root: Hast.Element, tagName: string) {
@@ -403,12 +401,12 @@ function customImageDetailsPlugin(options: {
 		// todo: use cli or server side implementation to generate mermaid diagrams on the server side.
 		// or switch to pintora or plantUML?
 		// done: switched to D2 for life
-		for (const node of d2Nodes) {
-			if (node.diagram.type !== "source") {
+		for (const d2Node of d2Nodes) {
+			if (d2Node.diagram.type !== "source") {
 				throw new Error("only expected diagram with their sources in this plugin");
 			}
 
-			const value = node.diagram.value.trim();
+			const value = d2Node.diagram.value.trim();
 			const encodedValue = textEncoder.encode(value); // todo: strip comments
 			const sha256Hash = sha256(encodedValue);
 			const hexedHash = Buffer.from(sha256Hash).toString("hex");
@@ -421,12 +419,17 @@ function customImageDetailsPlugin(options: {
 				continue;
 			}
 
+			// todo: switch back to library mode from CLI mode when the dangling workers are fixed
+			// const d2 = new D2();
+
 			// [expired] todo: svgo to optimise; should have done a long time ago.
 			// now no use until a full rewrite of the following happens
-			const compiledDiagram = await d2.compile(value, {
-				options: D2_COMPILE_OPTIONS,
-			});
-			const renderedSvg = await d2.render(compiledDiagram.diagram, D2_RENDER_OPTIONS);
+			// const compiledDiagram = await d2.compile(value, {
+			// 	options: D2_COMPILE_OPTIONS,
+			// });
+			// const renderedSvg = await d2.render(compiledDiagram.diagram, D2_RENDER_OPTIONS);
+
+			const renderedSvg = await renderD2toSVG(value);
 
 			const hastTree = fromHtml(renderedSvg, { space: "svg", fragment: true });
 			if (hastTree.children.length !== 1) {
@@ -465,6 +468,30 @@ function customImageDetailsPlugin(options: {
 				|| backgroundRectEl.tagName !== "rect"
 			) {
 				throw new Error("Expected a background <rect> element");
+			} else {
+				const themeColorRegex = new RegExp(`fill-(${D2_COLOR_PREFIXES.join("|")})(\\d+)$`);
+				if (
+					backgroundRectEl.properties.className != null
+					&& Array.isArray(backgroundRectEl.properties.className)
+				) {
+					const fillClass = backgroundRectEl.properties.className.find((c) =>
+						themeColorRegex.test(c.toString())
+					);
+					if (fillClass != null) {
+						const [className, prefix, number] = fillClass.toString().match(
+							themeColorRegex,
+						)!;
+						if (D2_BACKGROUND_COLOR_THEME_KEY !== `${prefix}${number}`) {
+							throw new Error(
+								`Expected diagram fill to be ${D2_BACKGROUND_COLOR_THEME_KEY}, this need to be fixed.`,
+							);
+						}
+					}
+				}
+
+				// if the above doesnt seem possible to continue with, then another check:
+				// const fillAttr = backgroundRectEl.properties.fill;
+				// if (fillAttr != null && fillAttr !== f) {} // todo: could check with the detectedThemeColors map later.
 			}
 
 			const fontStyleEl = innerSvgNode.children.shift();
@@ -859,12 +886,6 @@ function customImageDetailsPlugin(options: {
 				}
 			});
 
-			if (compiledDiagram.diagram.root.fill !== D2_BACKGROUND_COLOR_THEME_KEY) {
-				throw new Error(
-					`Expected diagram fill to be ${D2_BACKGROUND_COLOR_THEME_KEY}, this need to be fixed.`,
-				);
-			}
-
 			const optimizedSvg = optimize(toHtml(hastTree, { space: "svg" }), {
 				multipass: true,
 				plugins: [{
@@ -877,7 +898,7 @@ function customImageDetailsPlugin(options: {
 				}],
 			});
 
-			node.diagram = {
+			d2Node.diagram = {
 				type: "svg",
 				hash: hexedHash,
 				width: width,

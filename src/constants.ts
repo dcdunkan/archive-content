@@ -1,6 +1,5 @@
 import { ResvgRenderOptions } from "@resvg/resvg-js";
-import { CompileOptions, RenderOptions } from "@terrastruct/d2";
-import * as fs from "node:fs/promises";
+import { CompileOptions } from "@terrastruct/d2";
 import { join } from "node:path";
 
 export const DATA_DIR = "./data";
@@ -24,27 +23,31 @@ export const DIAGRAMS_THUMBNAILS_DIR = join(DIAGRAMS_DIR, "thumbnails");
 type FontKeys = keyof CompileOptions;
 type FontSuffix<K> = K extends `font${infer X}` ? X : never;
 type FontNames = FontSuffix<FontKeys>;
-const D2_DIAGRAM_FONTS_ROOT_DIR = "./src/resources/fonts-d2";
-const D2_FONT_FILENAMES: Record<FontNames, string> = {
+export const D2_DIAGRAM_FONTS_ROOT_DIR = "./src/resources/fonts-d2";
+export const D2_FONT_FILENAMES: Record<FontNames, string> = {
 	Regular: "RecursiveSansLnrSt-Regular.ttf",
 	Italic: "RecursiveSansLnrSt-Italic.ttf",
 	Semibold: "RecursiveSansLnrSt-SemiBold.ttf",
 	Bold: "RecursiveSansLnrSt-Bold.ttf",
 };
-export const D2_RENDER_OPTIONS: RenderOptions = {
-	pad: 0,
-	noXMLTag: true,
-};
-export const D2_COMPILE_OPTIONS: CompileOptions = {
-	fontRegular: await readD2FontFile(D2_FONT_FILENAMES.Regular),
-	fontItalic: await readD2FontFile(D2_FONT_FILENAMES.Italic),
-	fontSemibold: await readD2FontFile(D2_FONT_FILENAMES.Semibold),
-	fontBold: await readD2FontFile(D2_FONT_FILENAMES.Bold),
-	...D2_RENDER_OPTIONS,
-};
-function readD2FontFile(filename: string) {
-	return fs.readFile(join(D2_DIAGRAM_FONTS_ROOT_DIR, filename));
-}
+
+// todo: switch back to library mode from CLI mode when the dangling workers are fixed
+
+// export const D2_RENDER_OPTIONS: RenderOptions = {
+// 	pad: 0,
+// 	noXMLTag: true,
+// };
+// export const D2_COMPILE_OPTIONS: CompileOptions = {
+// 	fontRegular: await readD2FontFile(D2_FONT_FILENAMES.Regular),
+// 	fontItalic: await readD2FontFile(D2_FONT_FILENAMES.Italic),
+// 	fontSemibold: await readD2FontFile(D2_FONT_FILENAMES.Semibold),
+// 	fontBold: await readD2FontFile(D2_FONT_FILENAMES.Bold),
+// 	...D2_RENDER_OPTIONS,
+// };
+// function readD2FontFile(filename: string) {
+// 	return fs.readFile(join(D2_DIAGRAM_FONTS_ROOT_DIR, filename));
+// }
+
 export const FONT_CLASSES_MAPPING: Record<string, Record<string, string>> = {
 	"text": {
 		"font-family": "\"Recursive\"",

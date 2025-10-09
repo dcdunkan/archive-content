@@ -35,6 +35,10 @@ import * as Hast from "hast";
 import { toHtml } from "hast-util-to-html";
 import { rehypeMdast } from "./rehype.js";
 
+process.on("exit", (x) => {
+	console.log(`\x1b[34mbuild complete: ${x === 0 ? "success" : "failed"}\x1b[0m`); // todo: switch to picocolors
+});
+
 // === GLOBALS
 const existingImageMap = await openImageMapFile(IMAGE_MAPPING_GENERATED_FILE);
 const imageIdMap: ImageIdMap = new UsageHistoryMap(existingImageMap); // todo: should this also switch to hex?
@@ -258,7 +262,6 @@ for (const [diagramHexedHash, diagram] of diagramMap) {
 	// 		D2_DETECTED_COLOR_KEYS.set(themeColorKey, themeColorValue);
 	// 	}
 	// }
-
 	// console.log(D2_DETECTED_COLOR_KEYS);
 
 	const svgNode = diagram.hastTree.children[0];
@@ -269,8 +272,6 @@ for (const [diagramHexedHash, diagram] of diagramMap) {
 	) {
 		throw new Error("Expected an <svg> element as the only child of a diagram's hast tree");
 	}
-
-	// console.log(toHtml(diagram.hastTree, { space: "svg" }));
 
 	// STEP 3
 	// update the common color stylesheet:

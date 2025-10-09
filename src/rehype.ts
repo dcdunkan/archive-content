@@ -12,7 +12,7 @@ import type { Figure } from "./types.js";
 
 const BACKEND_ROOT_URL = process.env.URL; // netfliy context
 if (BACKEND_ROOT_URL == null) {
-	throw new Error("BACKEND_ROOT invalid");
+	throw new Error("URL environment variable invalid");
 }
 
 export async function rehypeMdast(markdownRoot: Mdast.Root, options: {
