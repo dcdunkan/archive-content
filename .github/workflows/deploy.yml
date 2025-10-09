@@ -36,6 +36,8 @@ jobs:
               run: curl -fsSL https://d2lang.com/install.sh | sh -s -- --version "$D2_VERSION" --method=standalone
 
             - name: Build files
+              env:
+                  URL: ${{ env.URL }}
               run: pnpm run build
 
             - name: Deploy to Netlify
