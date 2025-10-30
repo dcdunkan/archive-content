@@ -126,7 +126,16 @@ function math(): Handler {
 		if (typeof node.renderedString !== "string" || node.renderedString.trim().length === 0) {
 			throw new Error("math rendering failed?");
 		}
-		return { type: "raw", value: node.renderedString };
+		return {
+			type: "element",
+			tagName: "span",
+			properties: {
+				className: [node.type === "math" ? "katex-display" : "katex-inline"],
+			},
+			children: [
+				{ type: "raw", value: node.renderedString },
+			],
+		};
 	};
 }
 
