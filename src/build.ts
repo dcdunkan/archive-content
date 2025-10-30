@@ -583,7 +583,7 @@ for (const course of courses) {
 					moduleNumber: module.number,
 					moduleSlug: module.slug,
 
-					chapterName: chapter.title,
+					chapterName: chapter.title, // todo: change all "name" to "title"
 					chapterNumber: chapter.number,
 					chapterSlug: chapter.slug,
 				},
@@ -607,7 +607,8 @@ for (const course of courses) {
 							chapterNumber: chapter.number,
 							chapterSlug: chapter.slug,
 
-							parent: parent,
+							sectionParent: parent,
+							sectionSlug: section.slug,
 						},
 					});
 

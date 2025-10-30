@@ -115,6 +115,7 @@ export type Course = CourseData & {
 };
 
 // === SEARCH INDEX
+// todo: make this shared between repos
 export type SearchDocument =
 	| CourseSearchDocument
 	| ModuleSearchDocument
@@ -186,7 +187,8 @@ interface SectionSearchDocument extends BaseSearchDocument {
 		chapterNumber: number;
 		chapterName: string;
 
-		parent: string[];
+		sectionParent: string[];
+		sectionSlug: string;
 	};
 }
 
