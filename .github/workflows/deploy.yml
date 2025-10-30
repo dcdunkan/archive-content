@@ -37,7 +37,7 @@ jobs:
 
             - name: Build files
               env:
-                  URL: ${{ env.URL }}
+                  URL: ${{ vars.URL }}
               run: pnpm run build
 
             - name: Deploy to Netlify
