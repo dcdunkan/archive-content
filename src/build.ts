@@ -26,13 +26,27 @@ import {
 	THUMBNAIL_WIDTH,
 } from "./constants.js";
 import { resolveCourseDirectory } from "./remark.js";
-import { Course, DiagramMap, HeadingItem, ImageIdMap, SearchDocument } from "./types.js";
+import {
+	CHAPTER_FILE_HTML_SCHEMA,
+	CHAPTER_FILE_JSON_SCHEMA,
+	Course,
+	COURSE_FILE_SCHEMA,
+	COURSES_FILE_SCHEMA,
+	DiagramMap,
+	HeadingItem,
+	ImageIdMap,
+	MODULE_FILE_SCHEMA,
+	SEARCH_INDEX_FILE_SCHEMA,
+	SearchDocument,
+} from "./types.js";
 import { openImageMapFile, UsageHistoryMap, validateImageMap } from "./utilities.js";
 
 import * as css from "@adobe/css-tools";
 import { Resvg } from "@resvg/resvg-js";
 import * as Hast from "hast";
 import { toHtml } from "hast-util-to-html";
+import { removePosition } from "unist-util-remove-position";
+import z from "zod";
 import { rehypeMdast } from "./rehype.js";
 
 process.on("exit", (x) => {
@@ -74,24 +88,26 @@ await recmkdir(buildCoursesDir);
 for (const course of courses) {
 	await writeJSON(
 		join(buildCoursesDir, course.code + ".json"),
-		{
-			code: course.code,
-			name: course.name,
-			description: course.description,
-			preamble: course.preamble,
-			referenceBooks: course.referenceBooks,
-			textbooks: course.textbooks,
-			// todo: include nptelCourse as well (its undefinde right now)
-			modules: course.modules.map((module) => {
-				return {
-					number: module.number,
-					name: module.name,
-					slug: module.slug,
-					syllabus: module.syllabus, // todo: could generate the syallbus from the table of contents (take headings and comma-ize them)
-				};
-			}),
-		},
-	); // todo: introduce a zod schema on the client sides to validate the file generation
+		COURSE_FILE_SCHEMA.parse(
+			{
+				code: course.code,
+				name: course.name,
+				description: course.description,
+				preamble: course.preamble,
+				referenceBooks: course.referenceBooks,
+				textbooks: course.textbooks,
+				// todo: include nptelCourse as well (its undefinde right now)
+				modules: course.modules.map((module) => {
+					return {
+						number: module.number,
+						name: module.name,
+						slug: module.slug,
+						syllabus: module.syllabus, // todo: could generate the syallbus from the table of contents (take headings and comma-ize them)
+					};
+				}),
+			},
+		),
+	);
 
 	const buildCourseDir = join(buildCoursesDir, course.code);
 	await recmkdir(buildCourseDir);
@@ -102,7 +118,7 @@ for (const course of courses) {
 	for (const module of course.modules) {
 		await writeJSON(
 			join(buildModulesDir, module.number + ".json"),
-			{
+			MODULE_FILE_SCHEMA.parse({ // todo: pretty errors
 				number: module.number,
 				name: module.name,
 				syllabus: module.syllabus,
@@ -113,7 +129,7 @@ for (const course of courses) {
 					number: chapter.number,
 					structure: chapter.structure,
 				})),
-			}, // todo: satsifies using zod schema inferring (make schemas)
+			}),
 		);
 
 		const buildModuleDir = join(buildModulesDir, module.number.toString());
@@ -125,17 +141,17 @@ for (const course of courses) {
 		for (const chapter of module.chapters) {
 			await writeJSON(
 				join(buildChaptersDir, chapter.number + ".json"),
-				{
+				CHAPTER_FILE_JSON_SCHEMA.parse({
 					number: chapter.number,
 					title: chapter.title,
 					slug: chapter.slug,
 					structure: chapter.structure,
 					content: chapter.content,
-				}, // todo: satsifies using zod schema inferring (make schemas)
+				}),
 			);
 			await writeJSON(
 				join(buildChaptersDir, chapter.number + ".html.json"),
-				{
+				CHAPTER_FILE_HTML_SCHEMA.parse({
 					number: chapter.number,
 					title: chapter.title,
 					slug: chapter.slug,
@@ -144,7 +160,7 @@ for (const course of courses) {
 						moduleNumber: module.number,
 						chapterNumber: chapter.number,
 					}),
-				}, // todo: satsifies using zod schema inferring (make schemas)
+				}),
 			);
 		}
 	}
@@ -152,7 +168,7 @@ for (const course of courses) {
 
 await writeJSON(
 	join(BUILD_DIR, "courses.json"),
-	courses.map((course) => {
+	COURSES_FILE_SCHEMA.parse(courses.map((course) => {
 		return {
 			code: course.code,
 			name: course.name,
@@ -165,7 +181,7 @@ await writeJSON(
 				};
 			}),
 		};
-	}),
+	})),
 );
 
 // === IMAGE MANAGEMENT
@@ -623,5 +639,9 @@ for (const course of courses) {
 	}
 }
 
+await writeJSON(
+	join(BUILD_DIR, "search-index.json"),
+	SEARCH_INDEX_FILE_SCHEMA.parse(searchDocuments),
+);
+
 console.log("Generated", searchDocuments.length, "search entries");
-await writeJSON(join(BUILD_DIR, "search-index.json"), searchDocuments);

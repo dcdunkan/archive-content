@@ -75,7 +75,7 @@ export type ModuleChapter = {
 	content: Mdast.Root;
 };
 
-export const COURSE_SCHEMA = z.object({
+export const COURSE_DATA_SCHEMA = z.object({
 	code: z.string().nonempty(),
 	name: z.string().nonempty()
 		.refine((arg) => isNaN(Number(arg))),
@@ -92,15 +92,15 @@ export const COURSE_SCHEMA = z.object({
 		.optional(),
 });
 
-export const MODULE_SCHEMA = z.object({
+export const MODULE_DATA_SCHEMA = z.object({
 	number: z.int(),
 	name: z.string(),
 	syllabus: z.array(z.string()).default([]),
 	chapters: z.array(z.string()).default([]),
 });
 
-export type CourseData = z.infer<typeof COURSE_SCHEMA>;
-export type ModuleData = z.infer<typeof MODULE_SCHEMA>;
+export type CourseData = z.infer<typeof COURSE_DATA_SCHEMA>;
+export type ModuleData = z.infer<typeof MODULE_DATA_SCHEMA>;
 
 export type Module = Omit<ModuleData, "chapters"> & {
 	path: string;
@@ -116,81 +116,77 @@ export type Course = CourseData & {
 
 // === SEARCH INDEX
 // todo: make this shared between repos
-export type SearchDocument =
-	| CourseSearchDocument
-	| ModuleSearchDocument
-	| ChapterSearchDocument
-	| SectionSearchDocument;
+export type SearchDocument = z.infer<typeof searchDocumentSchema>;
 
-type BaseSearchDocument = {
-	id: string;
-	type: "course" | "module" | "chapter" | "section";
-	title: string;
-};
+export const baseSearchDocumentSchema = z.object({
+	id: z.string().nonempty(),
+	title: z.string().nonempty(),
+}).strict();
 
 // Global scope: courses, and other possible utilities
-
-interface CourseSearchDocument extends BaseSearchDocument {
-	type: "course";
-	context: {
-		courseCode: string;
-		courseName: string;
-	};
-}
+export const courseSearchDocumentSchema = baseSearchDocumentSchema.extend({
+	type: z.literal("course"),
+	context: z.object({
+		courseCode: z.string(),
+		courseName: z.string(),
+	}).strict(),
+}).strict();
 
 // Course scope: modules
+export const moduleSearchDocumentSchema = baseSearchDocumentSchema.extend({
+	type: z.literal("module"),
+	context: z.object({
+		courseCode: z.string(),
+		courseName: z.string(),
 
-interface ModuleSearchDocument extends BaseSearchDocument {
-	type: "module";
-
-	context: {
-		courseCode: string;
-		courseName: string;
-
-		moduleNumber: number;
-		moduleSlug: string;
-		moduleName: string;
-	};
-}
-
+		moduleNumber: z.int(),
+		moduleSlug: z.string(),
+		moduleName: z.string(),
+	}).strict(),
+}).strict();
 // Module Scope: chapters, sections, questions, figures, videos, terms.
 
-interface ChapterSearchDocument extends BaseSearchDocument {
-	type: "chapter";
+export const chapterSearchDocumentSchema = baseSearchDocumentSchema.extend({
+	type: z.literal("chapter"),
+	context: z.object({
+		courseCode: z.string(),
+		courseName: z.string(),
 
-	context: {
-		courseCode: string;
-		courseName: string;
+		moduleNumber: z.int(),
+		moduleSlug: z.string(),
+		moduleName: z.string(),
 
-		moduleSlug: string;
-		moduleNumber: number;
-		moduleName: string;
+		chapterNumber: z.int(),
+		chapterSlug: z.string(),
+		chapterName: z.string(),
+	}).strict(),
+}).strict();
 
-		chapterSlug: string;
-		chapterNumber: number;
-		chapterName: string;
-	};
-}
+export const sectionSearchDocumentSchema = baseSearchDocumentSchema.extend({
+	type: z.literal("section"),
+	context: z.object({
+		courseCode: z.string(),
+		courseName: z.string(),
 
-interface SectionSearchDocument extends BaseSearchDocument {
-	type: "section";
+		moduleNumber: z.int(),
+		moduleSlug: z.string(),
+		moduleName: z.string(),
 
-	context: {
-		courseCode: string;
-		courseName: string;
+		chapterNumber: z.int(),
+		chapterSlug: z.string(),
+		chapterName: z.string(),
 
-		moduleSlug: string;
-		moduleNumber: number;
-		moduleName: string;
+		sectionParent: z.array(z.string()),
+		sectionSlug: z.string(),
+	}).strict(),
+}).strict();
 
-		chapterSlug: string;
-		chapterNumber: number;
-		chapterName: string;
-
-		sectionParent: string[];
-		sectionSlug: string;
-	};
-}
+export const searchDocumentSchema = z.discriminatedUnion("type", [
+	courseSearchDocumentSchema,
+	moduleSearchDocumentSchema,
+	chapterSearchDocumentSchema,
+	sectionSearchDocumentSchema,
+]);
 
 // Build
 export type Diagram = {
@@ -205,3 +201,76 @@ export type ImageIdMap = UsageHistoryMap<string, string>;
 export type DiagramMap = Map<string, Diagram>;
 export type MapTypes<M extends Map<unknown, unknown>> = M extends Map<infer K, infer V> ? [K, V]
 	: never;
+
+// Generated file schemas
+export const COURSE_FILE_SCHEMA = z.object({
+	code: z.string().nonempty(),
+	name: z.string().nonempty(),
+	description: z.string().nonempty(),
+	preamble: z.string().nonempty(),
+	referenceBooks: z.array(z.string()),
+	textbooks: z.array(z.string()),
+	modules: z.array(
+		z.object({
+			number: z.int().positive(),
+			name: z.string().nonempty(),
+			slug: z.string().nonempty(),
+			syllabus: z.array(z.string()).nonempty(),
+		}).strict(),
+	),
+}).strict();
+const headingItemSchema: z.ZodSchema<HeadingItem> = z.lazy(() =>
+	z.object({
+		slug: z.string(),
+		title: z.string(),
+		depth: z.number(),
+		children: z.array(headingItemSchema),
+	}).strict()
+);
+export const MODULE_FILE_SCHEMA = z.object({
+	number: z.int().positive(),
+	name: z.string().nonempty(),
+	slug: z.string().nonempty(),
+	syllabus: z.array(z.string()).nonempty(),
+	chapters: z.array(
+		z.object({
+			number: z.int().positive(),
+			title: z.string().nonempty(),
+			slug: z.string().nonempty(),
+			structure: z.array(headingItemSchema),
+		}).strict(),
+	),
+}).strict();
+export const CHAPTER_FILE_COMMON_SCHEMA = z.object({
+	number: z.int().positive(),
+	title: z.string().nonempty(),
+	slug: z.string().nonempty(),
+	structure: z.array(headingItemSchema),
+}).strict();
+export const CHAPTER_FILE_JSON_SCHEMA = CHAPTER_FILE_COMMON_SCHEMA.extend({
+	content: z.object({
+		type: z.literal("root"),
+		data: z.object().optional(),
+		children: z.array(z.any()), // it's all good for our case, mdast type safety is covered by the typings.
+		position: z.undefined(),
+	}).strict(),
+}).strict();
+export const CHAPTER_FILE_HTML_SCHEMA = CHAPTER_FILE_COMMON_SCHEMA.extend({
+	content: z.string(),
+}).strict();
+export const COURSES_FILE_SCHEMA = z.array(
+	z.object({
+		code: z.string().nonempty(),
+		name: z.string().nonempty(),
+		description: z.string().nonempty(),
+		modules: z.array(
+			z.object({
+				number: z.int().positive(),
+				name: z.string().nonempty(),
+				slug: z.string().nonempty(),
+			}).strict(),
+		),
+	}).strict(),
+);
+
+export const SEARCH_INDEX_FILE_SCHEMA = z.array(searchDocumentSchema);

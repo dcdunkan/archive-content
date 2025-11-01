@@ -36,14 +36,14 @@ import {
 } from "./constants.js";
 import {
 	type Course,
-	COURSE_SCHEMA,
+	COURSE_DATA_SCHEMA,
 	type D2Node,
 	DiagramMap,
 	type Figure,
 	type HeadingItem,
 	ImageIdMap,
 	type Module,
-	MODULE_SCHEMA,
+	MODULE_DATA_SCHEMA,
 	type ModuleChapter,
 } from "./types.js";
 import { renderD2toSVG } from "./utilities.js";
@@ -71,7 +71,7 @@ export async function resolveCourseDirectory(options: {
 	diagramMap: DiagramMap;
 }): Promise<Course> {
 	const course = await fs.readFile(join(options.root, "course.yaml"), "utf8")
-		.then((content) => z.parse(COURSE_SCHEMA, parse(content)));
+		.then((content) => z.parse(COURSE_DATA_SCHEMA, parse(content)));
 
 	const modules: Module[] = [];
 	for (const entry of await fs.readdir(options.root, { withFileTypes: true })) {
@@ -122,7 +122,7 @@ export async function resolveModuleDirectory(options: {
 	diagramMap: DiagramMap;
 }): Promise<Module> {
 	const metadata = await fs.readFile(join(options.root, "module.yaml"), "utf8")
-		.then((content) => z.parse(MODULE_SCHEMA, parse(content)));
+		.then((content) => z.parse(MODULE_DATA_SCHEMA, parse(content)));
 
 	const moduleNameSlug = moduleNameSlugger(metadata.name.trim(), {
 		lowercase: true,
