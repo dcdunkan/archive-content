@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=../../schemas/course.json
+
+code: 23CST501
+name: Design and Analysis of Algorithms
+description: The core of Computer Science
+preamble: >
+    The course introduces students to the design of computer algorithms, as
+    well as analysis of algorithms. Algorithm design and analysis provide the theoretical
+    backbone of Computer Science and are a must in the daily work of the successful
+    programmer. The goal of this course is to provide a solid background in the design
+    and analysis of the major classes of algorithms. At the end of the course students
+    will be able to develop their own versions for a given computational task and to
+    compare and contrast their performance.
+textbooks:
+    - Introduction to Algorithms, 4th Edition, Thomas H Cormen, Charles E Lieserson, Ronald L Rivest and Clifford Stein, MIT Press/McGraw-Hill (2022)
+    - Algorithm Design, 1st Edition, Jon Kleinberg and Éva Tardos, Pearson (2005)
+    - Fundamentals of Computer Algorithms, 2nd Edition, Ellis Horowitz, Sartaj Sahni, Sanguthevar Rajasekaran, Orient Longman Universities Press (2008)
+referenceBooks:
+    - Algorithms, Sanjoy Dasgupta, Christos Papadimitriou, Umesh Vazirani (2006)
+    - "Algorithm Design: Foundations, Analysis, and Internet Examples, Second Edition, Michael T Goodrich and Roberto Tamassia, Wiley (2006)"

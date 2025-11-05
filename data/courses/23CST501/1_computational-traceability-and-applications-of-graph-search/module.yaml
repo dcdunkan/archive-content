@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../../schemas/module.json
+
+number: 1
+name: Computational Tractability and Applications of Graph Search
+syllabus:
+    - Review of Asymptotic notations and Order of Growth - upper, lower and tight bounds - properties
+    - Graph Traversal- BFS, DFS. Strongly connected components, Directed Acyclic
+    - Graphs and Topological Ordering. Balanced Binary Search trees – AVL tree
+chapters:
+    - 1_algorithms.md
+    - 2_asymptotic-notations-and-order-of-growth.md
+    - 3_graph.md
+    - 4_breadth-first-search.md
+    - 5_depth-first-search.md
+    - 6_connected-components.md
+    - 7_directed-acyclic-graphs-and-topological-ordering.md
+    - 8_avl-tree.md

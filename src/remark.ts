@@ -142,6 +142,7 @@ export async function resolveModuleDirectory(options: {
 	for (const [index, chapterFilename] of metadata.chapters.entries()) {
 		chapterItemSlugger.reset();
 
+		console.log(join(options.root, chapterFilename));
 		const chapterContent = await fs.readFile(join(options.root, chapterFilename), "utf8");
 		const parsedTree = processor.parse(chapterContent);
 		const transformed = await processor.run(parsedTree);
